@@ -1,7 +1,7 @@
 <template>
   <div class="draw-view">
-    <v-sheet class="tools-bar elevation-8">
-      <v-btn @click="$refs.fileInput.click()">
+    <v-sheet class="tools-bar elevation-8" rounded>
+      <v-btn @click="$refs.fileInput.click()" class="elevation-0">
         <v-icon> {{ icons.upload }} </v-icon>
       </v-btn>
       <v-menu
@@ -10,7 +10,7 @@
         offset-x
       >
         <template v-slot:activator="{ on, attrs }">
-          <v-btn v-bind="attrs" v-on="on">
+          <v-btn v-bind="attrs" v-on="on" class="elevation-0">
             <v-avatar :color="gridColor" size="24"></v-avatar>
           </v-btn>
         </template>
@@ -25,15 +25,15 @@
           ></v-color-picker>
         </v-card>
       </v-menu>
-      <v-btn @click="drawGrid()">
+      <v-btn @click="drawGrid()" class="elevation-0">
         <v-icon> {{ icons.grid }} </v-icon>
       </v-btn>
 
-      <v-btn @click="pixelSquare > 0 ? pixelSquare -= 10 : ''">
+      <v-btn @click="setPixelSquare(-10)"  a="pixelSquare > 0 ? pixelSquare -= 10 : ''" class="elevation-0">
         <v-icon> {{ icons.minus}} </v-icon>
       </v-btn>
       <input @change="drawGrid()" class="minimal" type="number" v-model="pixelSquare">
-      <v-btn @click="pixelSquare += 10">
+      <v-btn @click="setPixelSquare(10)" class="elevation-0">
         <v-icon> {{ icons.plus }} </v-icon>
       </v-btn>
 
@@ -46,14 +46,15 @@
       />
 
     </v-sheet>
-    <v-sheet class="tools-bar-right elevation-8">
-      <v-btn @click="rotate()">
+
+    <v-sheet class="tools-bar-right elevation-8" rounded>
+      <v-btn @click="rotate()" class="elevation-0">
         <v-icon> {{ icons.right }} </v-icon>
       </v-btn>
-      <v-btn @click="rotate(false)">
+      <v-btn @click="rotate(false)" class="elevation-0">
         <v-icon> {{ icons.left }} </v-icon>
       </v-btn>
-      <v-btn @click="download()">
+      <v-btn @click="download()" class="elevation-0">
         <v-icon> {{ icons.download }} </v-icon>
       </v-btn>
 
@@ -65,6 +66,7 @@
         enctype="multipart/form-data"
       />
     </v-sheet>
+
     <div
       class="viewport-container"
       @mousemove.stop="move($event)"
@@ -125,7 +127,7 @@ export default class Grid extends Vue {
 
   private canvas: any = null;
   private context: any = null;
-  public pixelSquare = 100;
+  public pixelSquare= 100;
   private baseImage: HTMLImageElement = new Image();
   private rotation = 0;
   private scale = 1;
@@ -184,7 +186,7 @@ export default class Grid extends Vue {
       this.cleanImage();
       let h = this.canvas.height;
       let w = this.canvas.width;
-      let step = this.pixelSquare;
+      let step = parseFloat(this.pixelSquare);
       this.context.beginPath();
       for (var x = 0; x <= w; x += step) {
         this.context.moveTo(x, 0);
@@ -223,10 +225,16 @@ export default class Grid extends Vue {
     this.setCssVar("--scale", this.scale);
   }
 
+  public setPixelSquare(num:number):void{
+    this.pixelSquare = parseFloat(this.pixelSquare) + num;
+    this.drawGrid();
+  }
+
   public move(event: any): void {
+    debugger;
     if(event.currentTarget.classList.contains("viewport-container")){
-      this.setCssVar("--ruler-x", event.layerX);
-      this.setCssVar("--ruler-y", event.layerY);
+      this.setCssVar("--ruler-x", event.pageX);
+      this.setCssVar("--ruler-y", event.pageY);
       if(this.draging){
         this.x = this.x + event.movementX;
         this.y = this.y + event.movementY;
@@ -257,7 +265,7 @@ export default class Grid extends Vue {
   height: 100%;
   position: relative;
   background: grey;
-  max-height: calc(100vh - 70px);
+  max-height: 100vh;
   max-width: 100%;
 
   input.minimal{
@@ -284,6 +292,10 @@ export default class Grid extends Vue {
     overflow: hidden;
     width: 100%;
     height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
     .ruler {
       position: absolute;
       left: 0;
@@ -316,7 +328,9 @@ export default class Grid extends Vue {
       transition: rotate 0.3s ease-in;
       transform: rotate(calc(1deg * var(--rotation)));
       box-shadow: 0px 0px 2px red;
-      width: fit-content;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .positioner{
       transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
@@ -324,12 +338,15 @@ export default class Grid extends Vue {
     }
     #viewport {
       box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
-      width: calc(100% * var(--scale));
+      // width: calc(100% * var(--scale));
+      max-width: 500%;
+      min-width: 10%;
+      zoom: var(--scale);
       height: 90%;
-      //transform-origin: calc(50vw + var(--ruler-x)*1px) calc(50vh + var(--ruler-y) * 1px);
-      transition: all 0.1s ease;
-      //transform: scale(var(--scale));
-      box-shadow: inset 0px 0px 20px green;
+      background: rgba(0, 0, 0, 0.4);
+      //transition: all 0.1s ease;
+      //    transform-origin: calc(50vw + var(--ruler-x)*1px) calc(50vh + var(--ruler-y) * 1px);
+      //    transform: scale(var(--scale));
     }
   }
 }
