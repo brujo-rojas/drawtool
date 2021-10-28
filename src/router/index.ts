@@ -12,7 +12,7 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: "/grid",
-    name: "Grid",
+    name: "grid",
     component: () => import(/* webpackChunkName: "grid" */ "../views/Grid.vue"),
   },
 ];
