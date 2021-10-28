@@ -1,5 +1,11 @@
 <template>
   <div class="draw-view">
+
+      <v-btn @click="$refs.fileInput.click()" class="elevation-4 upload-btn" fab >
+        <v-icon> {{ icons.upload }} </v-icon>
+      </v-btn>
+
+
     <v-sheet class="tools-bar elevation-8 align-center" rounded>
       <v-btn
         @click="toggleGrid()"
@@ -44,6 +50,8 @@
         <v-icon> {{ icons.plus }} </v-icon>
       </v-btn>
 
+      <span class="mx-2"> {{ squareWidth }} x {{ squareHeight }}</span>
+
       <input
         style="display: none"
         ref="fileInput"
@@ -63,7 +71,7 @@
       <v-btn @click="rotate(false)" class="elevation-0">
         <v-icon> {{ icons.left }} </v-icon>
       </v-btn>
-      <v-btn @click="toggleFilter()" class="elevation-0">
+      <v-btn @click="toggleFilter()" class="elevation-0" :color="blackAndWhiteActive ? 'primary' : ''">
         <v-icon> {{ icons.filter }} </v-icon>
       </v-btn>
       <v-btn @click="download()" class="elevation-0">
@@ -100,7 +108,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue, Watch } from "vue-property-decorator";
 
 import {
   mdiDownload,
@@ -139,6 +147,8 @@ export default class Grid extends Vue {
   ];
 
   public pixelSquare = 100;
+  public squareWidth = 0;
+  public squareHeight = 0;
 
   private canvas: any = null;
   private context: any = null;
@@ -150,6 +160,7 @@ export default class Grid extends Vue {
   private y = 0;
   private gridActive = false;
   private blackAndWhiteActive = false;
+
   mounted(): void {
     this.canvas = document.getElementById("viewport");
     this.context = this.canvas.getContext("2d");
@@ -196,14 +207,24 @@ export default class Grid extends Vue {
     context.fillStyle = "white";
     context.globalAlpha = 1;
     context.fillRect(0, 0, this.baseImage.width, this.baseImage.height);
-    context.globalCompositeOperation='source-atop';
+    context.globalCompositeOperation = "source-atop";
   }
 
   public cleanImage(): void {
     this.drawImageOnCanvas();
   }
 
+  private refreshProportions(): void {
+    this.squareWidth =
+      Math.round((this.baseImage.width * 10) / this.pixelSquare) / 10;
+    this.squareHeight =
+      Math.round((this.baseImage.height * 10) / this.pixelSquare) / 10;
+  }
+
   private cleanCssVars(): void {
+    this.x = 0;
+    this.y = 0;
+    this.scale = 1;
     this.setCssVar("--x", 0);
     this.setCssVar("--y", 0);
     this.setCssVar("--ruler-x", 0);
@@ -225,6 +246,7 @@ export default class Grid extends Vue {
   }
 
   public redraw(): void {
+    this.refreshProportions();
     this.drawImageOnCanvas();
     this.drawGrid();
   }
@@ -234,7 +256,7 @@ export default class Grid extends Vue {
       this.gridActive = true;
       let h = this.canvas.height;
       let w = this.canvas.width;
-      let step = this.pixelSquare;
+      let step = Number(this.pixelSquare);
       this.context.beginPath();
       for (var x = 0; x <= w; x += step) {
         this.context.moveTo(x, 0);
@@ -274,7 +296,7 @@ export default class Grid extends Vue {
   }
 
   public setPixelSquare(num: number): void {
-    this.pixelSquare = this.pixelSquare + num;
+    this.pixelSquare = Number(this.pixelSquare) + num;
     this.redraw();
   }
 
@@ -312,10 +334,10 @@ export default class Grid extends Vue {
 .draw-view {
   width: 100%;
   height: 100%;
-  position: relative;
   background: grey;
   max-height: 100vh;
   max-width: 100%;
+  position:relative;
 
   input.minimal {
     font-size: 1.2rem;
@@ -365,11 +387,11 @@ export default class Grid extends Vue {
       }
       .horizontal-line {
         min-width: 100vw;
-        border-bottom: 1px solid rgb(0, 255, 255,);
+        border-bottom: 1px solid rgb(0, 255, 255);
       }
       .vertical-line {
         min-height: 100vh;
-        border-right: 1px solid rgb(0, 255 ,255);
+        border-right: 1px solid rgb(0, 255, 255);
       }
     }
     .rotator {
@@ -391,5 +413,12 @@ export default class Grid extends Vue {
       background: rgba(0, 0, 0, 0.4);
     }
   }
+}
+.v-btn.upload-btn{
+  margin: 1em;
+  bottom: 0px;
+  right: 0px;
+  position: absolute !important;
+  z-index:20;
 }
 </style>
