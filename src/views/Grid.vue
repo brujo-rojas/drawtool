@@ -1,9 +1,14 @@
 <template>
   <div class="draw-view">
-    <v-sheet class="tools-bar elevation-8" rounded>
-      <v-btn @click="$refs.fileInput.click()" class="elevation-0">
-        <v-icon> {{ icons.upload }} </v-icon>
+    <v-sheet class="tools-bar elevation-8 align-center" rounded>
+      <v-btn
+        @click="toggleGrid()"
+        class="elevation-0"
+        :color="gridActive ? 'primary' : ''"
+      >
+        <v-icon> {{ icons.grid }} </v-icon>
       </v-btn>
+
       <v-menu
         v-model="menuColorPicker"
         :close-on-content-click="false"
@@ -21,18 +26,20 @@
             mode="hexa"
             show-swatches
             v-model="gridColor"
-            @input="drawGrid()"
+            @input="redraw()"
           ></v-color-picker>
         </v-card>
       </v-menu>
-      <v-btn @click="drawGrid()" class="elevation-0">
-        <v-icon> {{ icons.grid }} </v-icon>
-      </v-btn>
 
-      <v-btn @click="setPixelSquare(-10)"  a="pixelSquare > 0 ? pixelSquare -= 10 : ''" class="elevation-0">
-        <v-icon> {{ icons.minus}} </v-icon>
+      <v-btn @click="setPixelSquare(-10)" class="elevation-0">
+        <v-icon> {{ icons.minus }} </v-icon>
       </v-btn>
-      <input @change="drawGrid()" class="minimal" type="number" v-model="pixelSquare">
+      <input
+        @change="redraw()"
+        class="minimal"
+        type="number"
+        v-model="pixelSquare"
+      />
       <v-btn @click="setPixelSquare(10)" class="elevation-0">
         <v-icon> {{ icons.plus }} </v-icon>
       </v-btn>
@@ -44,15 +51,20 @@
         @change="fileSelected"
         enctype="multipart/form-data"
       />
-
     </v-sheet>
 
     <v-sheet class="tools-bar-right elevation-8" rounded>
+      <v-btn @click="$refs.fileInput.click()" class="elevation-0">
+        <v-icon> {{ icons.upload }} </v-icon>
+      </v-btn>
       <v-btn @click="rotate()" class="elevation-0">
         <v-icon> {{ icons.right }} </v-icon>
       </v-btn>
       <v-btn @click="rotate(false)" class="elevation-0">
         <v-icon> {{ icons.left }} </v-icon>
+      </v-btn>
+      <v-btn @click="toggleFilter()" class="elevation-0">
+        <v-icon> {{ icons.filter }} </v-icon>
       </v-btn>
       <v-btn @click="download()" class="elevation-0">
         <v-icon> {{ icons.download }} </v-icon>
@@ -94,6 +106,7 @@ import {
   mdiDownload,
   mdiFileUpload,
   mdiGridLarge,
+  mdiImageFilterBlackWhite,
   mdiMinus,
   mdiPlus,
   mdiRotateLeftVariant,
@@ -111,11 +124,11 @@ export default class Grid extends Vue {
     right: mdiRotateRightVariant,
     download: mdiDownload,
     minus: mdiMinus,
-    plus: mdiPlus
-
+    plus: mdiPlus,
+    filter: mdiImageFilterBlackWhite,
   };
 
-  public gridColor = "#FF0000";
+  public gridColor = "#00FFFF";
 
   public swatches: Array<Array<string>> = [
     ["#FF0000", "#AA0000", "#550000"],
@@ -125,16 +138,18 @@ export default class Grid extends Vue {
     ["#0000FF", "#0000AA", "#000055"],
   ];
 
+  public pixelSquare = 100;
+
   private canvas: any = null;
   private context: any = null;
-  public pixelSquare= 100;
   private baseImage: HTMLImageElement = new Image();
   private rotation = 0;
   private scale = 1;
   private draging = false;
   private x = 0;
   private y = 0;
-
+  private gridActive = false;
+  private blackAndWhiteActive = false;
   mounted(): void {
     this.canvas = document.getElementById("viewport");
     this.context = this.canvas.getContext("2d");
@@ -155,7 +170,7 @@ export default class Grid extends Vue {
     reader.addEventListener("load", (event: any) => {
       this.baseImage.src = event.target.result;
       this.baseImage.onload = () => {
-        this.drawImageOnCanvas();
+        this.redraw();
       };
     });
     reader.readAsDataURL(file);
@@ -165,15 +180,30 @@ export default class Grid extends Vue {
     if (this.canvas && this.context) {
       this.canvas.width = this.baseImage.width;
       this.canvas.height = this.baseImage.height;
+
       this.context.drawImage(this.baseImage, 0, 0);
+
+      if (this.blackAndWhiteActive) {
+        this.blackAndWhite(this.context);
+      }
+
+      this.gridActive = false;
     }
+  }
+
+  public blackAndWhite(context: any): void {
+    context.globalCompositeOperation = "color";
+    context.fillStyle = "white";
+    context.globalAlpha = 1;
+    context.fillRect(0, 0, this.baseImage.width, this.baseImage.height);
+    context.globalCompositeOperation='source-atop';
   }
 
   public cleanImage(): void {
     this.drawImageOnCanvas();
   }
 
-  private cleanCssVars(): void{
+  private cleanCssVars(): void {
     this.setCssVar("--x", 0);
     this.setCssVar("--y", 0);
     this.setCssVar("--ruler-x", 0);
@@ -181,12 +211,30 @@ export default class Grid extends Vue {
     this.setCssVar("--scale", 1);
   }
 
+  public toggleGrid(): void {
+    if (this.gridActive) {
+      this.cleanImage();
+    } else {
+      this.redraw();
+    }
+  }
+
+  public toggleFilter(): void {
+    this.blackAndWhiteActive = !this.blackAndWhiteActive;
+    this.redraw();
+  }
+
+  public redraw(): void {
+    this.drawImageOnCanvas();
+    this.drawGrid();
+  }
+
   public drawGrid(): void {
     if (this.context) {
-      this.cleanImage();
+      this.gridActive = true;
       let h = this.canvas.height;
       let w = this.canvas.width;
-      let step = parseFloat(this.pixelSquare);
+      let step = this.pixelSquare;
       this.context.beginPath();
       for (var x = 0; x <= w; x += step) {
         this.context.moveTo(x, 0);
@@ -225,17 +273,16 @@ export default class Grid extends Vue {
     this.setCssVar("--scale", this.scale);
   }
 
-  public setPixelSquare(num:number):void{
-    this.pixelSquare = parseFloat(this.pixelSquare) + num;
-    this.drawGrid();
+  public setPixelSquare(num: number): void {
+    this.pixelSquare = this.pixelSquare + num;
+    this.redraw();
   }
 
   public move(event: any): void {
-    debugger;
-    if(event.currentTarget.classList.contains("viewport-container")){
+    if (event.currentTarget.classList.contains("viewport-container")) {
       this.setCssVar("--ruler-x", event.pageX);
       this.setCssVar("--ruler-y", event.pageY);
-      if(this.draging){
+      if (this.draging) {
         this.x = this.x + event.movementX;
         this.y = this.y + event.movementY;
         this.setCssVar("--x", this.x);
@@ -243,10 +290,12 @@ export default class Grid extends Vue {
       }
     }
   }
-  public mousedown(event : any) : void{
+
+  public mousedown(event: any): void {
     this.draging = true;
   }
-  public mouseup(event : any) : void{
+
+  public mouseup(event: any): void {
     this.draging = false;
   }
 }
@@ -268,9 +317,9 @@ export default class Grid extends Vue {
   max-height: 100vh;
   max-width: 100%;
 
-  input.minimal{
+  input.minimal {
     font-size: 1.2rem;
-    text-align:center;
+    text-align: center;
     padding: 4px 1rem;
     width: 6rem;
   }
@@ -316,37 +365,30 @@ export default class Grid extends Vue {
       }
       .horizontal-line {
         min-width: 100vw;
-        border-bottom: 1px solid red;
+        border-bottom: 1px solid rgb(0, 255, 255,);
       }
       .vertical-line {
         min-height: 100vh;
-        border-right: 1px solid red;
+        border-right: 1px solid rgb(0, 255 ,255);
       }
     }
-    .rotator{
+    .rotator {
       transform-origin: 50% 50%;
-      transition: rotate 0.3s ease-in;
+      transition: all 0.3s ease-in;
       transform: rotate(calc(1deg * var(--rotation)));
-      box-shadow: 0px 0px 2px red;
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    .positioner{
+    .positioner {
       transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
-      box-shadow: 0px 0px 2px blue;
     }
     #viewport {
       box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
-      // width: calc(100% * var(--scale));
-      max-width: 500%;
       min-width: 10%;
       zoom: var(--scale);
       height: 90%;
       background: rgba(0, 0, 0, 0.4);
-      //transition: all 0.1s ease;
-      //    transform-origin: calc(50vw + var(--ruler-x)*1px) calc(50vh + var(--ruler-y) * 1px);
-      //    transform: scale(var(--scale));
     }
   }
 }
