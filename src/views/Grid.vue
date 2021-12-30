@@ -1,98 +1,182 @@
 <template>
   <div class="draw-view">
+    <v-sheet class="tools-bar glassy-dark px-4" dark>
+      <div class="align-center d-flex flex-row">
 
-      <v-btn @click="$refs.fileInput.click()" class="elevation-4 upload-btn" fab >
-        <v-icon> {{ icons.upload }} </v-icon>
-      </v-btn>
+          <v-icon class="mr-4"> {{ icons.cannabis}} </v-icon>
 
+        <v-btn text @click="$refs.fileInput.click()" class="elevation-0">
+          <v-icon> {{ icons.upload }} </v-icon>
+        </v-btn>
+        <v-btn text @click="rotate()" class="elevation-0">
+          <v-icon> {{ icons.right }} </v-icon>
+        </v-btn>
+        <v-btn text @click="rotate(false)" class="elevation-0">
+          <v-icon> {{ icons.left }} </v-icon>
+        </v-btn>
 
-    <v-sheet class="tools-bar elevation-8 align-center" rounded>
-      <v-btn
-        @click="toggleGrid()"
-        class="elevation-0"
-        :color="gridActive ? 'primary' : ''"
-      >
-        <v-icon> {{ icons.grid }} </v-icon>
-      </v-btn>
+        <v-btn text @click="toggleGridMenu()" class="elevation-0">
+          <v-icon :color="gridColor"> {{ icons.grid }} </v-icon>
+          <v-icon> {{ gridMenu ? icons.menuUp : icons.menuDown }} </v-icon>
+        </v-btn>
 
-      <v-menu
-        v-model="menuColorPicker"
-        :close-on-content-click="false"
-        offset-x
-      >
-        <template v-slot:activator="{ on, attrs }">
-          <v-btn v-bind="attrs" v-on="on" class="elevation-0">
-            <v-avatar :color="gridColor" size="24"></v-avatar>
-          </v-btn>
-        </template>
+        <v-spacer></v-spacer>
 
-        <v-card>
-          <v-color-picker
-            :swatches="swatches"
-            mode="hexa"
-            show-swatches
-            v-model="gridColor"
-            @input="redraw()"
-          ></v-color-picker>
-        </v-card>
-      </v-menu>
+        <input
+          style="display: none"
+          ref="fileInput"
+          type="file"
+          @change="fileSelected"
+          enctype="multipart/form-data"
+        />
 
-      <v-btn @click="setPixelSquare(-10)" class="elevation-0">
-        <v-icon> {{ icons.minus }} </v-icon>
-      </v-btn>
-      <input
-        @change="redraw()"
-        class="minimal"
-        type="number"
-        v-model="pixelSquare"
-      />
-      <v-btn @click="setPixelSquare(10)" class="elevation-0">
-        <v-icon> {{ icons.plus }} </v-icon>
-      </v-btn>
+        <v-btn text @click="toggleFilterMenu()" class="elevation-0">
+          <v-icon> {{ icons.filter }} </v-icon>
+          <v-icon> {{ filterMenu ? icons.menuUp : icons.menuDown }} </v-icon>
+        </v-btn>
 
-      <span class="mx-2"> {{ squareWidth }} x {{ squareHeight }}</span>
-
-      <input
-        style="display: none"
-        ref="fileInput"
-        type="file"
-        @change="fileSelected"
-        enctype="multipart/form-data"
-      />
+        <v-btn text @click="download()" class="elevation-0">
+          <v-icon> {{ icons.download }} </v-icon>
+        </v-btn>
+      </div>
     </v-sheet>
 
-    <v-sheet class="tools-bar-right elevation-8" rounded>
-      <v-btn @click="$refs.fileInput.click()" class="elevation-0">
-        <v-icon> {{ icons.upload }} </v-icon>
-      </v-btn>
-      <v-btn @click="rotate()" class="elevation-0">
-        <v-icon> {{ icons.right }} </v-icon>
-      </v-btn>
-      <v-btn @click="rotate(false)" class="elevation-0">
-        <v-icon> {{ icons.left }} </v-icon>
-      </v-btn>
-      <v-btn @click="toggleFilter()" class="elevation-0" :color="blackAndWhiteActive ? 'primary' : ''">
-        <v-icon> {{ icons.filter }} </v-icon>
-      </v-btn>
-      <v-btn @click="download()" class="elevation-0">
-        <v-icon> {{ icons.download }} </v-icon>
+    <v-sheet
+      v-if="gridMenu"
+      class="pa-2 glassy-dark position-top-left d-flex flex-column"
+      dark
+      rounded
+    >
+      <div class="d-flex flex-row">
+        <v-btn text @click="toggleGrid()" class="elevation-0">
+          <v-icon> {{ gridActive ? icons.eyeOpen : icons.eyeClose }} </v-icon>
+        </v-btn>
+
+        <v-divider vertical></v-divider>
+
+        <v-menu
+          v-model="menuColorPicker"
+          :close-on-content-click="false"
+          offset-x
+        >
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn text v-bind="attrs" v-on="on" class="elevation-0">
+              <v-avatar :color="gridColor" size="24"></v-avatar>
+            </v-btn>
+          </template>
+
+          <v-card>
+            <v-color-picker
+              :swatches="swatches"
+              mode="hexa"
+              show-swatches
+              v-model="gridColor"
+              @input="redraw()"
+            ></v-color-picker>
+          </v-card>
+        </v-menu>
+
+        <v-divider vertical></v-divider>
+
+        <v-btn text @click="setPixelSquare(-10)" class="elevation-0">
+          <v-icon> {{ icons.minus }} </v-icon>
+        </v-btn>
+
+        <input
+          @change="redraw()"
+          class="minimal"
+          type="number"
+          v-model="pixelSquare"
+        />
+
+        <v-btn text @click="setPixelSquare(10)" class="elevation-0">
+          <v-icon> {{ icons.plus }} </v-icon>
+        </v-btn>
+      </div>
+
+      <div class="d-flex flex-row">
+        <v-spacer></v-spacer>
+        <span class="mx-2"> {{ squareWidth }} x {{ squareHeight }}</span>
+      </div>
+    </v-sheet>
+
+    <v-sheet
+      v-if="filterMenu"
+      class="pa-2 slider-container glassy-dark position-top-right"
+      dark
+      rounded
+    >
+      <v-btn text @click="toggleFilter()" class="elevation-0">
+        <v-icon> {{ isFilterActive ? icons.eyeOpen : icons.eyeClose }} </v-icon>
       </v-btn>
 
-      <input
-        style="display: none"
-        ref="fileInput"
-        type="file"
-        @change="fileSelected"
-        enctype="multipart/form-data"
-      />
+      <v-subheader class="pl-0">
+        Filters
+      </v-subheader>
+
+      <div
+        class="d-flex flex-row align-center"
+        v-for="(filter, indexFilter) in filters"
+        :key="'filter-' + indexFilter"
+      >
+        <v-simple-checkbox
+          v-ripple
+          @input="changeSlider()"
+          color="green"
+          v-model="filter.enabled"
+        ></v-simple-checkbox>
+        <v-slider
+          dense
+          hide-details
+          v-model="filter.value"
+          @input="changeSlider()"
+          color="green"
+          :min="filter.min"
+          :max="filter.max"
+          step="1"
+          :thumb-size="24"
+          thumb-label
+          :label="filter.label"
+        ></v-slider>
+      </div>
+
+      <v-subheader class="pl-0">
+        Composition
+      </v-subheader>
+      <div
+        class="d-flex flex-row align-center"
+        v-for="(composition, indexComposition) in compositions"
+        :key="indexComposition"
+      >
+        <v-simple-checkbox
+          v-ripple
+          @input="changeSlider()"
+          color="blue"
+          v-model="composition.enabled"
+        ></v-simple-checkbox>
+
+        <v-slider
+          dense
+          hide-details
+          v-model="composition.value"
+          @input="changeSlider()"
+          color="blue"
+          :min="composition.min"
+          :max="composition.max"
+          step="1"
+          :thumb-size="24"
+          thumb-label
+          :label="composition.label"
+        ></v-slider>
+      </div>
     </v-sheet>
 
     <div
       class="viewport-container"
-      @mousemove.stop="move($event)"
+      @mousemove="move($event)"
       @mousedown="mousedown($event)"
       @mouseup="mouseup($event)"
-      @wheel.prevent="zoom($event)"
+      @wheel="zoom($event)"
     >
       <div class="ruler">
         <div class="vertical-line"></div>
@@ -109,24 +193,29 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from "vue-property-decorator";
+import { debounce } from "../helpers/helpers";
 
 import {
   mdiDownload,
-  mdiFileUpload,
+  mdiEye,
+  mdiEyeOff,
+  mdiUpload,
   mdiGridLarge,
   mdiImageFilterBlackWhite,
   mdiMinus,
   mdiPlus,
   mdiRotateLeftVariant,
   mdiRotateRightVariant,
+  mdiMenuUp,
+  mdiMenuDown,
+  mdiCannabis,
 } from "@mdi/js";
 
 @Component
 export default class Grid extends Vue {
-  public menuColorPicker = false;
-
   public icons = {
-    upload: mdiFileUpload,
+    cannabis: mdiCannabis,
+    upload: mdiUpload,
     grid: mdiGridLarge,
     left: mdiRotateLeftVariant,
     right: mdiRotateRightVariant,
@@ -134,6 +223,10 @@ export default class Grid extends Vue {
     minus: mdiMinus,
     plus: mdiPlus,
     filter: mdiImageFilterBlackWhite,
+    eyeOpen: mdiEye,
+    eyeClose: mdiEyeOff,
+    menuDown: mdiMenuDown,
+    menuUp: mdiMenuUp,
   };
 
   public gridColor = "#00FFFF";
@@ -146,23 +239,161 @@ export default class Grid extends Vue {
     ["#0000FF", "#0000AA", "#000055"],
   ];
 
-  public pixelSquare = 100;
-  public squareWidth = 0;
-  public squareHeight = 0;
+  public filters: Array<any> = [
+    {
+      label: "Contrast",
+      fn: "contrast",
+      value: 100,
+      suffix: "%",
+      min: 0,
+      max: 200,
+      enabled: true,
+    },
+    /*
+    {
+      label: "Blur",
+      fn: "blur",
+      value: 0,
+      suffix: "px",
+      min: 0,
+      max: 50,
+      enabled: true,
+    },
+    */
+    {
+      label: "Sepia",
+      fn: "sepia",
+      value: 0,
+      suffix: "%",
+      min: 0,
+      max: 100,
+      enabled: true,
+    },
+    {
+      label: "Saturate",
+      fn: "saturate",
+      value: 100,
+      suffix: "%",
+      min: 0,
+      max: 200,
+      enabled: true,
+    },
+    /*
+    {
+      label: "Invert",
+      fn: "invert",
+      value: 0,
+      suffix: "%",
+      min: 0,
+      max: 100,
+      enabled: true,
+    },
+    {
+      label: "Grayscale",
+      fn: "grayscale",
+      value: 0,
+      suffix: "%",
+      min: 0,
+      max: 100,
+      enabled: true,
+    },
+    */
+    {
+      label: "Brightness",
+      fn: "brightness",
+      value: 100,
+      suffix: "%",
+      min: 0,
+      max: 200,
+      enabled: true,
+    },
+  ];
 
-  private canvas: any = null;
-  private context: any = null;
+  public compositions: Array<any> = [
+    /*
+    {
+      label: "Multiply",
+      operation: "multiply",
+      value: 0,
+      enabled: true,
+    },
+    {
+      label: "Saturation",
+      operation: "saturation",
+      value: 0,
+      enabled: true,
+    },
+    {
+      label: "Lighten",
+      operation: "lighten",
+      value: 0,
+      enabled: true,
+      min: 0,
+      max: 100,
+    },
+    */
+    {
+      label: "Lighter",
+      operation: "lighter",
+      value: 0,
+      enabled: true,
+      min: 0,
+      max: 100,
+    },
+    {
+      label: "Darken",
+      operation: "darken",
+      value: 0,
+      enabled: true,
+      min: -100,
+      max: 0,
+    },
+    /*
+    {
+      label: "Hard Light",
+      operation: "hard-light",
+      value: 0,
+      enabled: true,
+    },
+    */
+    {
+      label: "Soft Light",
+      operation: "soft-light",
+      value: 0,
+      enabled: true,
+      min: 0,
+      max: 100,
+    },
+    {
+      label: "Luminosity",
+      operation: "luminosity",
+      value: 0,
+      enabled: true,
+      min: 0,
+      max: 100,
+    },
+  ];
+
+  private pixelSquare = 100;
+  private squareWidth = 0;
+  private squareHeight = 0;
+  private menuColorPicker = false;
+
+  private canvas: HTMLCanvasElement | null = null;
+  private context: CanvasRenderingContext2D | null = null;
   private baseImage: HTMLImageElement = new Image();
   private rotation = 0;
   private scale = 1;
   private draging = false;
   private x = 0;
   private y = 0;
-  private gridActive = false;
-  private blackAndWhiteActive = false;
+  private gridActive = true;
+  private gridMenu = false;
+  private isFilterActive = true;
+  private filterMenu = false;
 
   mounted(): void {
-    this.canvas = document.getElementById("viewport");
+    this.canvas = document.getElementById("viewport") as HTMLCanvasElement;
     this.context = this.canvas.getContext("2d");
   }
 
@@ -186,30 +417,6 @@ export default class Grid extends Vue {
     });
     reader.readAsDataURL(file);
   }
-
-  private drawImageOnCanvas(): void {
-    if (this.canvas && this.context) {
-      this.canvas.width = this.baseImage.width;
-      this.canvas.height = this.baseImage.height;
-
-      this.context.drawImage(this.baseImage, 0, 0);
-
-      if (this.blackAndWhiteActive) {
-        this.blackAndWhite(this.context);
-      }
-
-      this.gridActive = false;
-    }
-  }
-
-  public blackAndWhite(context: any): void {
-    context.globalCompositeOperation = "color";
-    context.fillStyle = "white";
-    context.globalAlpha = 1;
-    context.fillRect(0, 0, this.baseImage.width, this.baseImage.height);
-    context.globalCompositeOperation = "source-atop";
-  }
-
   public cleanImage(): void {
     this.drawImageOnCanvas();
   }
@@ -232,28 +439,82 @@ export default class Grid extends Vue {
     this.setCssVar("--scale", 1);
   }
 
-  public toggleGrid(): void {
-    if (this.gridActive) {
-      this.cleanImage();
-    } else {
-      this.redraw();
-    }
+  public toggleGridMenu(): void {
+    this.gridMenu = !this.gridMenu;
   }
 
-  public toggleFilter(): void {
-    this.blackAndWhiteActive = !this.blackAndWhiteActive;
+  public toggleGrid(): void {
+    this.gridActive = !this.gridActive;
     this.redraw();
   }
 
+  public toggleFilterMenu(): void {
+    this.filterMenu = !this.filterMenu;
+  }
+
+  public toggleFilter(): void {
+    this.isFilterActive = !this.isFilterActive;
+    this.redraw();
+  }
+
+  public changeSlider = debounce(() => {
+    this.redraw();
+  }, 10);
+
   public redraw(): void {
-    this.refreshProportions();
     this.drawImageOnCanvas();
     this.drawGrid();
   }
 
-  public drawGrid(): void {
+  private drawImageOnCanvas(): void {
+    if (this.canvas && this.context) {
+      this.canvas.width = this.baseImage.width;
+      this.canvas.height = this.baseImage.height;
+
+      if (this.isFilterActive) {
+        this.filterImage(this.context, this.filters);
+      }
+
+      this.context.drawImage(this.baseImage, 0, 0);
+
+      if (this.isFilterActive) {
+        this.compositeImage(this.context, this.compositions);
+      }
+    }
+  }
+
+  public filterImage(context: any, filters: Array<any>): void {
+    let filtersString = "";
+    filters.forEach((filter) => {
+      if (filter.enabled) {
+        filtersString += `${filter.fn}(${filter.value}${filter.suffix}) `;
+      }
+    });
+    context.filter = filtersString;
+  }
+
+  public compositeImage(context: any, compositions: Array<any>): void {
     if (this.context) {
-      this.gridActive = true;
+      this.context.filter = "none";
+      compositions.forEach((composition) => {
+        if (composition.enabled) {
+          context.globalCompositeOperation = composition.operation;
+          context.fillStyle = composition.value > 0 ? "white" : "black";
+          context.globalAlpha = Math.abs(composition.value / 100);
+          context.fillRect(0, 0, this.baseImage.width, this.baseImage.height);
+        }
+      });
+      context.globalCompositeOperation = "source-over";
+      context.globalAlpha = 1;
+    }
+  }
+
+  public drawGrid(): void {
+    if (this.canvas && this.context && this.gridActive) {
+      this.context.globalCompositeOperation = "source-over";
+      this.context.globalAlpha = 1;
+      this.context.filter = "none";
+      this.refreshProportions();
       let h = this.canvas.height;
       let w = this.canvas.width;
       let step = Number(this.pixelSquare);
@@ -273,10 +534,12 @@ export default class Grid extends Vue {
   }
 
   public download(): void {
-    var link = document.createElement("a");
-    link.download = "image.png";
-    link.href = this.canvas.toDataURL();
-    link.click();
+    if (this.canvas) {
+      var link = document.createElement("a");
+      link.download = "image.png";
+      link.href = this.canvas.toDataURL();
+      link.click();
+    }
   }
 
   public rotate(toRight = true): void {
@@ -331,31 +594,54 @@ export default class Grid extends Vue {
   --ruler-x: 0;
   --ruler-y: 0;
 }
+
 .draw-view {
   width: 100%;
   height: 100%;
-  background: grey;
+  background: rgb(66, 66, 66);
   max-height: 100vh;
   max-width: 100%;
-  position:relative;
+  position: relative;
 
   input.minimal {
-    font-size: 1.2rem;
+    font-size: 1rem;
     text-align: center;
-    padding: 4px 1rem;
+    padding: 0;
     width: 6rem;
+    color: inherit;
+  }
+
+  .slider-container {
+    width: 400px;
   }
 
   .tools-bar {
     position: absolute;
-    left: 3rem;
-    top: 1rem;
+    left: 0px;
+    top: 0px;
+    width: 100%;
     z-index: 10;
+    height: 2.5em;
   }
-  .tools-bar-right {
+
+  .position-bottom-right {
     position: absolute;
     right: 3rem;
-    top: 1rem;
+    bottom: 1rem;
+    z-index: 10;
+  }
+
+  .position-top-right {
+    position: absolute;
+    right: 1rem;
+    top: 2.5rem;
+    z-index: 10;
+  }
+
+  .position-top-left {
+    position: absolute;
+    left: 1rem;
+    top: 2.5rem;
     z-index: 10;
   }
   .viewport-container {
@@ -366,8 +652,9 @@ export default class Grid extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
+    cursor: move;
 
-    .ruler {
+    ._ruler {
       position: absolute;
       left: 0;
       top: 0;
@@ -396,7 +683,7 @@ export default class Grid extends Vue {
     }
     .rotator {
       transform-origin: 50% 50%;
-      transition: all 0.3s ease-in;
+      transition: all 0.1s ease-in-out;
       transform: rotate(calc(1deg * var(--rotation)));
       display: flex;
       justify-content: center;
@@ -406,19 +693,29 @@ export default class Grid extends Vue {
       transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
     }
     #viewport {
-      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
+        0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
       min-width: 10%;
       zoom: var(--scale);
       height: 90%;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(168, 168, 168, 1);
     }
   }
 }
-.v-btn.upload-btn{
+.v-btn.upload-btn {
   margin: 1em;
   bottom: 0px;
   right: 0px;
   position: absolute !important;
-  z-index:20;
+  z-index: 20;
+}
+
+.glassy-dark {
+  color: white;
+  background: rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: inset 0px 0px 40px rgba(255, 255, 255, 0.15),
+    5px 10px 10px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(20px);
 }
 </style>

@@ -18,3 +18,12 @@ export default Vue.extend({
   }),
 });
 </script>
+
+<style lang="scss">
+html{
+  overflow: auto !important;
+}
+body{
+  user-select: none;
+}
+</style>
