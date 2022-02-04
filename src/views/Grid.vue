@@ -2,8 +2,7 @@
   <div class="draw-view">
     <v-sheet class="tools-bar glassy-dark px-4" dark>
       <div class="align-center d-flex flex-row">
-
-          <v-icon class="mr-4"> {{ icons.cannabis}} </v-icon>
+        <v-icon class="mr-4"> {{ icons.cannabis }} </v-icon>
 
         <v-btn text @click="$refs.fileInput.click()" class="elevation-0">
           <v-icon> {{ icons.upload }} </v-icon>
@@ -35,6 +34,10 @@
           <v-icon> {{ filterMenu ? icons.menuUp : icons.menuDown }} </v-icon>
         </v-btn>
 
+        <v-btn text @click="togglePickerColor()" class="elevation-0">
+          <v-icon> {{ icons.picker }} </v-icon>
+        </v-btn>
+
         <v-btn text @click="download()" class="elevation-0">
           <v-icon> {{ icons.download }} </v-icon>
         </v-btn>
@@ -55,7 +58,7 @@
         <v-divider vertical></v-divider>
 
         <v-menu
-          v-model="menuColorPicker"
+          v-model="menuColorGrid"
           :close-on-content-click="false"
           offset-x
         >
@@ -110,9 +113,7 @@
         <v-icon> {{ isFilterActive ? icons.eyeOpen : icons.eyeClose }} </v-icon>
       </v-btn>
 
-      <v-subheader class="pl-0">
-        Filters
-      </v-subheader>
+      <v-subheader class="pl-0"> Filters </v-subheader>
 
       <div
         class="d-flex flex-row align-center"
@@ -140,9 +141,7 @@
         ></v-slider>
       </div>
 
-      <v-subheader class="pl-0">
-        Composition
-      </v-subheader>
+      <v-subheader class="pl-0"> Composition </v-subheader>
       <div
         class="d-flex flex-row align-center"
         v-for="(composition, indexComposition) in compositions"
@@ -171,6 +170,61 @@
       </div>
     </v-sheet>
 
+    <v-sheet
+      v-if="isShowColorPicker"
+      class="pa-2 color-picker-container glassy-dark position-bottom-right"
+      dark
+      rounded
+    >
+      <div>
+        <div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.rgbaPercentage.r}%;`"
+          style="--bg: red"
+          :label="actualColor.rgbaPercentage.r"
+        ></div>
+        <div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.rgbaPercentage.g}%;`"
+          style="--bg: green"
+          :label="actualColor.rgbaPercentage.g"
+        ></div>
+        <div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.rgbaPercentage.b}%;`"
+          style="--bg:blue"
+          :label="actualColor.rgbaPercentage.b"
+        ></div>
+
+        <div class="mini-bar-divider"></div>
+<div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.cmyk.c}%;`"
+          style="--bg:cyan"
+          :label="actualColor.cmyk.c"
+        ></div>
+<div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.cmyk.m}%;`"
+          style="--bg:magenta"
+          :label="actualColor.cmyk.m"
+        ></div>
+<div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.cmyk.y}%;`"
+          style="--bg:yellow"
+          :label="actualColor.cmyk.y"
+        ></div>
+        <div
+          class="mini-bar"
+          :style="`--porcentaje: ${actualColor.cmyk.k}%;`"
+          style="--bg:black"
+          :label="actualColor.cmyk.k"
+        ></div>
+      </div>
+      <div class="color-frame"></div>
+    </v-sheet>
+
     <div
       class="viewport-container"
       @mousemove="move($event)"
@@ -184,7 +238,7 @@
       </div>
       <div class="positioner">
         <div class="rotator">
-          <canvas id="viewport"></canvas>
+          <canvas @mousemove="moveOnCanvas($event)" id="viewport"></canvas>
         </div>
       </div>
     </div>
@@ -209,6 +263,7 @@ import {
   mdiMenuUp,
   mdiMenuDown,
   mdiCannabis,
+  mdiEyedropper,
 } from "@mdi/js";
 
 @Component
@@ -227,6 +282,7 @@ export default class Grid extends Vue {
     eyeClose: mdiEyeOff,
     menuDown: mdiMenuDown,
     menuUp: mdiMenuUp,
+    picker: mdiEyedropper,
   };
 
   public gridColor = "#00FFFF";
@@ -377,7 +433,9 @@ export default class Grid extends Vue {
   private pixelSquare = 100;
   private squareWidth = 0;
   private squareHeight = 0;
-  private menuColorPicker = false;
+  private menuColorGrid = false;
+  private isShowColorPicker = true;
+  private actualColor = this.canvasPixelColor(null); //init defaults
 
   private canvas: HTMLCanvasElement | null = null;
   private context: CanvasRenderingContext2D | null = null;
@@ -455,6 +513,10 @@ export default class Grid extends Vue {
   public toggleFilter(): void {
     this.isFilterActive = !this.isFilterActive;
     this.redraw();
+  }
+
+  public togglePickerColor(): void {
+    this.isShowColorPicker = !this.isShowColorPicker;
   }
 
   public changeSlider = debounce(() => {
@@ -575,6 +637,81 @@ export default class Grid extends Vue {
       }
     }
   }
+  public moveOnCanvas(event: any): void {
+    if (event.currentTarget.id == "viewport") {
+      if (this.isShowColorPicker) {
+        this.actualColor = this.canvasPixelColor(event);
+        this.setCssVar("--color-frame-bg", this.actualColor.hex);
+      }
+    }
+  }
+
+  public canvasPixelColor(ev: any) {
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let a = 0;
+
+    if (ev && this.canvas && this.context) {
+      let mX = ev.offsetX || ev.layerX;
+      let mY = ev.offsetY || ev.layerY;
+      const x = (mX * this.canvas.width) / this.canvas.clientWidth;
+      const y = (mY * this.canvas.height) / this.canvas.clientHeight;
+      let data = this.context.getImageData(x, y, 1, 1).data;
+      r = data[0];
+      g = data[1];
+      b = data[2];
+      a = data[3];
+    }
+    return {
+      rgbaPercentage: { 
+        r: Math.round((r/255) * 100),
+        g: Math.round((g/255) * 100),
+        b: Math.round((b/255) * 100),
+        a: Math.round((a/255) * 100),
+      },
+      rgba: { 
+        r,
+        g,
+        b,
+        a
+      },
+      hex: this.rgbToHex(r, g, b),
+      cmyk: this.rgb2cmyk(r, g, b),
+    };
+  }
+  public rgb2cmyk(r: number, g: number, b: number, normalized = false) {
+    var c = 1 - r / 255;
+    var m = 1 - g / 255;
+    var y = 1 - b / 255;
+    var k = Math.min(c, Math.min(m, y));
+
+    c = (c - k) / (1 - k);
+    m = (m - k) / (1 - k);
+    y = (y - k) / (1 - k);
+
+    if (!normalized) {
+      c = Math.round(c * 100);
+      m = Math.round(m * 100);
+      y = Math.round(y * 100);
+      k = Math.round(k * 100);
+    }
+
+    c = isNaN(c) ? 0 : c;
+    m = isNaN(m) ? 0 : m;
+    y = isNaN(y) ? 0 : y;
+    k = isNaN(k) ? 0 : k;
+
+    return {
+      c: c,
+      m: m,
+      y: y,
+      k: k,
+    };
+  }
+  public rgbToHex(r: number, g: number, b: number) {
+    return "#" + (16777216 | b | (g << 8) | (r << 16)).toString(16).slice(1);
+  }
 
   public mousedown(event: any): void {
     this.draging = true;
@@ -593,6 +730,7 @@ export default class Grid extends Vue {
   --y: 0;
   --ruler-x: 0;
   --ruler-y: 0;
+  --color-frame-bg: red;
 }
 
 .draw-view {
@@ -626,7 +764,7 @@ export default class Grid extends Vue {
 
   .position-bottom-right {
     position: absolute;
-    right: 3rem;
+    right: 1rem;
     bottom: 1rem;
     z-index: 10;
   }
@@ -652,9 +790,9 @@ export default class Grid extends Vue {
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: move;
+    cursor: none;
 
-    ._ruler {
+    .ruler {
       position: absolute;
       left: 0;
       top: 0;
@@ -662,24 +800,53 @@ export default class Grid extends Vue {
       height: 0;
       overflow: visible;
       z-index: 2;
+      pointer-events: none;
+
       transform: translate(
         calc(var(--ruler-x) * 1px),
         calc(var(--ruler-y) * 1px)
       );
+
+      &:after,
+      &:before{
+        content:"";
+        display:block;
+        position:absolute;
+        left: -10px;
+        top: -10px;
+        width: 20px;
+        height: 20px;
+        border-radius:50%;
+        //border: 1px solid red;
+        backdrop-filter: invert(100%);
+      }
+
+      &:before{
+        left: -8px;
+        top: -8px;
+        width: 16px;
+        height: 16px;
+      }
+
       .horizontal-line,
       .vertical-line {
         position: absolute;
-        right: 0;
-        bottom: 0;
       }
       .horizontal-line {
-        min-width: 100vw;
-        border-bottom: 1px solid rgb(0, 255, 255);
+        width: 30px;
+        right: -15px;;
+        height: 2px;
+        margin-top: -1px;
+        backdrop-filter: invert(100%);
       }
       .vertical-line {
-        min-height: 100vh;
-        border-right: 1px solid rgb(0, 255, 255);
+        height: 30px;
+        bottom: -15px;
+        width: 2px;
+        margin-left: -1px;
+        backdrop-filter: invert(100%);
       }
+
     }
     .rotator {
       transform-origin: 50% 50%;
@@ -696,7 +863,8 @@ export default class Grid extends Vue {
       box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
         0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
       min-width: 10%;
-      zoom: var(--scale);
+      //zoom: var(--scale);
+      transform: scale(var(--scale));
       height: 90%;
       background: rgba(168, 168, 168, 1);
     }
@@ -717,5 +885,60 @@ export default class Grid extends Vue {
   box-shadow: inset 0px 0px 40px rgba(255, 255, 255, 0.15),
     5px 10px 10px rgba(0, 0, 0, 0.2) !important;
   backdrop-filter: blur(20px);
+}
+.color-frame {
+  background: var(--color-frame-bg);
+  width: 100%;
+  min-width: 100px;
+  height: 50px;
+}
+
+.mini-bar-divider{
+  height:140px;
+  margin: 0 10px;
+  width:0;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  display:inline-block;
+}
+
+.mini-bar {
+  width: 6px;
+  height: 100px;
+  display: inline-block;
+  position: relative;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  margin: 30px 10px 5px;
+  &:after {
+    content: "";
+    height: var(--porcentaje);
+    width: inherit;
+    background: var(--bg);
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    display: block;
+    border-radius: inherit;
+    border-top: 2px solid grey;
+  }
+  &:before {
+    content: "__";
+    content: attr(label);
+    text-shadow: 0px 0px 2px black;
+    color: white;
+    height: auto;
+    width: auto;
+    background: rgba(0, 0, 0, 0.4);
+    position: absolute;
+    left: -6px;
+    top: -25px;
+    padding: 3px;
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    z-index: 2;
+    box-sizing: border-box;
+    border-radius: 3px;
+  }
 }
 </style>
