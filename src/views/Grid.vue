@@ -192,33 +192,33 @@
         <div
           class="mini-bar"
           :style="`--porcentaje: ${actualColor.rgbaPercentage.b}%;`"
-          style="--bg:blue"
+          style="--bg: blue"
           :label="actualColor.rgbaPercentage.b"
         ></div>
 
         <div class="mini-bar-divider"></div>
-<div
+        <div
           class="mini-bar"
           :style="`--porcentaje: ${actualColor.cmyk.c}%;`"
-          style="--bg:cyan"
+          style="--bg: cyan"
           :label="actualColor.cmyk.c"
         ></div>
-<div
+        <div
           class="mini-bar"
           :style="`--porcentaje: ${actualColor.cmyk.m}%;`"
-          style="--bg:magenta"
+          style="--bg: magenta"
           :label="actualColor.cmyk.m"
         ></div>
-<div
+        <div
           class="mini-bar"
           :style="`--porcentaje: ${actualColor.cmyk.y}%;`"
-          style="--bg:yellow"
+          style="--bg: yellow"
           :label="actualColor.cmyk.y"
         ></div>
         <div
           class="mini-bar"
           :style="`--porcentaje: ${actualColor.cmyk.k}%;`"
-          style="--bg:black"
+          style="--bg: black"
           :label="actualColor.cmyk.k"
         ></div>
       </div>
@@ -227,10 +227,11 @@
 
     <div
       class="viewport-container"
+            @wheel="zoom($event)"
       @mousemove="move($event)"
-      @mousedown="mousedown($event)"
-      @mouseup="mouseup($event)"
-      @wheel="zoom($event)"
+      @mousedown.left="mousedown($event)"
+      @mouseup.left="mouseup($event)"
+      @mouseout.left="mouseup($event)"
     >
       <div class="ruler">
         <div class="vertical-line"></div>
@@ -238,7 +239,9 @@
       </div>
       <div class="positioner">
         <div class="rotator">
-          <canvas @mousemove="moveOnCanvas($event)" id="viewport"></canvas>
+          <canvas 
+
+            @mousemove="moveOnCanvas($event)" id="viewport"></canvas>
         </div>
       </div>
     </div>
@@ -613,11 +616,34 @@ export default class Grid extends Vue {
     document.documentElement.style.setProperty(varName, value);
   }
 
+  private getCssVar(varName: string): any{
+    return getComputedStyle(document.documentElement).getPropertyValue(varName);
+  }
+
   public zoom(event: any): void {
-    let deltaY: number = event.deltaY;
-    this.scale = this.scale - deltaY / 500;
-    this.scale = this.scale > 0.1 ? this.scale : 0.1;
-    this.setCssVar("--scale", this.scale);
+    if (this.canvas) {
+      let deltaY: number = event.deltaY;
+      this.scale = this.scale - deltaY / 500;
+      this.scale = this.scale > 0.1 ? this.scale : 0.1;
+
+      let mX = event.offsetX || event.layerX;
+      let mY = event.offsetY || event.layerY;
+      let x = (mX * this.canvas.width) / this.canvas.clientWidth;
+      let y = (mY * this.canvas.height) / this.canvas.clientHeight;
+
+      x = (x / this.canvas.clientWidth) * 100;
+      y = (y / this.canvas.clientWidth) * 100;
+
+      x = x > 100 ? 100 : x;
+      y = y > 100 ? 100 : y;
+
+      x = x < 0 ? 0 : x;
+      y = y < 0 ? 0 : y;
+
+      this.setCssVar("--scale", this.scale );
+      //this.setCssVar("--scale-origin-x", x);
+      //this.setCssVar("--scale-origin-y", y);
+    }
   }
 
   public setPixelSquare(num: number): void {
@@ -664,17 +690,17 @@ export default class Grid extends Vue {
       a = data[3];
     }
     return {
-      rgbaPercentage: { 
-        r: Math.round((r/255) * 100),
-        g: Math.round((g/255) * 100),
-        b: Math.round((b/255) * 100),
-        a: Math.round((a/255) * 100),
+      rgbaPercentage: {
+        r: Math.round((r / 255) * 100),
+        g: Math.round((g / 255) * 100),
+        b: Math.round((b / 255) * 100),
+        a: Math.round((a / 255) * 100),
       },
-      rgba: { 
+      rgba: {
         r,
         g,
         b,
-        a
+        a,
       },
       hex: this.rgbToHex(r, g, b),
       cmyk: this.rgb2cmyk(r, g, b),
@@ -726,11 +752,13 @@ export default class Grid extends Vue {
 :root {
   --rotation: 0;
   --scale: 1;
+  --scale-origin-x: 50%;
+  --scale-origin-y: 50%;
   --x: 0;
   --y: 0;
   --ruler-x: 0;
   --ruler-y: 0;
-  --color-frame-bg: red;
+  --color-frame-bg: black;
 }
 
 .draw-view {
@@ -808,20 +836,20 @@ export default class Grid extends Vue {
       );
 
       &:after,
-      &:before{
-        content:"";
-        display:block;
-        position:absolute;
+      &:before {
+        content: "";
+        display: block;
+        position: absolute;
         left: -10px;
         top: -10px;
         width: 20px;
         height: 20px;
-        border-radius:50%;
+        border-radius: 50%;
         //border: 1px solid red;
         backdrop-filter: invert(100%);
       }
 
-      &:before{
+      &:before {
         left: -8px;
         top: -8px;
         width: 16px;
@@ -834,7 +862,7 @@ export default class Grid extends Vue {
       }
       .horizontal-line {
         width: 30px;
-        right: -15px;;
+        right: -15px;
         height: 2px;
         margin-top: -1px;
         backdrop-filter: invert(100%);
@@ -846,7 +874,6 @@ export default class Grid extends Vue {
         margin-left: -1px;
         backdrop-filter: invert(100%);
       }
-
     }
     .rotator {
       transform-origin: 50% 50%;
@@ -860,11 +887,12 @@ export default class Grid extends Vue {
       transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
     }
     #viewport {
+      position:relative;
       box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
         0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
       min-width: 10%;
-      //zoom: var(--scale);
       transform: scale(var(--scale));
+      transform-origin: calc(var(--scale-origin-x) * 1%) calc(var(--scale-origin-y) * 1%);
       height: 90%;
       background: rgba(168, 168, 168, 1);
     }
@@ -890,20 +918,20 @@ export default class Grid extends Vue {
   background: var(--color-frame-bg);
   width: 100%;
   min-width: 100px;
-  height: 50px;
+  height: 70px;
 }
 
-.mini-bar-divider{
-  height:140px;
+.mini-bar-divider {
+  height: 110px;
   margin: 0 10px;
-  width:0;
+  width: 0;
   border-left: 1px solid rgba(255, 255, 255, 0.2);
-  display:inline-block;
+  display: inline-block;
 }
 
 .mini-bar {
   width: 6px;
-  height: 100px;
+  height: 70px;
   display: inline-block;
   position: relative;
   background: rgba(0, 0, 0, 0.2);
