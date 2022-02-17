@@ -1,5 +1,5 @@
 <template>
-  <div class="draw-view">
+  <div class="draw-view" @drop.prevent="addFile" @dragover.prevent>
     <v-sheet class="tools-bar glassy-dark px-4" dark>
       <div class="align-center d-flex flex-row">
         <v-icon class="mr-4"> {{ icons.cannabis }} </v-icon>
@@ -25,7 +25,7 @@
           style="display: none"
           ref="fileInput"
           type="file"
-          @change="fileSelected"
+          @change="chooseFile"
           enctype="multipart/form-data"
         />
 
@@ -227,7 +227,7 @@
 
     <div
       class="viewport-container"
-            @wheel="zoom($event)"
+      @wheel="zoom($event)"
       @mousemove="move($event)"
       @mousedown.left="mousedown($event)"
       @mouseup.left="mouseup($event)"
@@ -239,9 +239,7 @@
       </div>
       <div class="positioner">
         <div class="rotator">
-          <canvas 
-
-            @mousemove="moveOnCanvas($event)" id="viewport"></canvas>
+          <canvas @mousemove="moveOnCanvas($event)" id="viewport"></canvas>
         </div>
       </div>
     </div>
@@ -458,11 +456,21 @@ export default class Grid extends Vue {
     this.context = this.canvas.getContext("2d");
   }
 
-  public fileSelected(evt: any): void {
+  public addFile(evt: any): void {
+    let droppedFiles = evt.dataTransfer.files;
+    if (!droppedFiles) return;
+    this.fileSelected(droppedFiles[0]);
+  }
+
+  public chooseFile(evt: any): void {
     evt.preventDefault();
-    console.log(evt);
-    this.cleanCssVars();
     let file = evt.target.files[0];
+    if(!file) return;
+    this.fileSelected(file);
+  }
+
+  public fileSelected(file: any): void {
+    this.cleanCssVars();
 
     if (file.type && !file.type.startsWith("image/")) {
       console.log("File is not an image.", file.type, file);
@@ -616,7 +624,7 @@ export default class Grid extends Vue {
     document.documentElement.style.setProperty(varName, value);
   }
 
-  private getCssVar(varName: string): any{
+  private getCssVar(varName: string): any {
     return getComputedStyle(document.documentElement).getPropertyValue(varName);
   }
 
@@ -640,7 +648,7 @@ export default class Grid extends Vue {
       x = x < 0 ? 0 : x;
       y = y < 0 ? 0 : y;
 
-      this.setCssVar("--scale", this.scale );
+      this.setCssVar("--scale", this.scale);
       //this.setCssVar("--scale-origin-x", x);
       //this.setCssVar("--scale-origin-y", y);
     }
@@ -887,12 +895,13 @@ export default class Grid extends Vue {
       transform: translate(calc(var(--x) * 1px), calc(var(--y) * 1px));
     }
     #viewport {
-      position:relative;
+      position: relative;
       box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
         0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
       min-width: 10%;
       transform: scale(var(--scale));
-      transform-origin: calc(var(--scale-origin-x) * 1%) calc(var(--scale-origin-y) * 1%);
+      transform-origin: calc(var(--scale-origin-x) * 1%)
+        calc(var(--scale-origin-y) * 1%);
       height: 90%;
       background: rgba(168, 168, 168, 1);
     }
