@@ -81,20 +81,40 @@
 
         <v-divider vertical></v-divider>
 
-        <v-btn text @click="setPixelSquare(-10)" class="elevation-0">
-          <v-icon> {{ icons.minus }} </v-icon>
-        </v-btn>
+        <div class="flex flex-column">
+          <div class="flex flex-row">
+            <v-btn text @click="setLineWidth(-1)" class="elevation-0">
+              <v-icon> {{ icons.minus }} </v-icon>
+            </v-btn>
 
-        <input
-          @change="redraw()"
-          class="minimal"
-          type="number"
-          v-model="pixelSquare"
-        />
+            <input
+              @change="redraw()"
+              class="minimal"
+              type="number"
+              v-model="lineWidth"
+            />
 
-        <v-btn text @click="setPixelSquare(10)" class="elevation-0">
-          <v-icon> {{ icons.plus }} </v-icon>
-        </v-btn>
+            <v-btn text @click="setLineWidth(1)" class="elevation-0">
+              <v-icon> {{ icons.plus }} </v-icon>
+            </v-btn>
+          </div>
+          <div class="flex flex-row">
+            <v-btn text @click="setPixelSquare(-10)" class="elevation-0">
+              <v-icon> {{ icons.minus }} </v-icon>
+            </v-btn>
+
+            <input
+              @change="redraw()"
+              class="minimal"
+              type="number"
+              v-model="pixelSquare"
+            />
+
+            <v-btn text @click="setPixelSquare(10)" class="elevation-0">
+              <v-icon> {{ icons.plus }} </v-icon>
+            </v-btn>
+          </div>
+        </div>
       </div>
 
       <div class="d-flex flex-row">
@@ -287,6 +307,7 @@ export default class Grid extends Vue {
   };
 
   public gridColor = "#00FFFF";
+  public lineWidth = 1;
 
   public swatches: Array<Array<string>> = [
     ["#FF0000", "#AA0000", "#550000"],
@@ -306,7 +327,6 @@ export default class Grid extends Vue {
       max: 200,
       enabled: true,
     },
-    /*
     {
       label: "Blur",
       fn: "blur",
@@ -316,7 +336,6 @@ export default class Grid extends Vue {
       max: 50,
       enabled: true,
     },
-    */
     {
       label: "Sepia",
       fn: "sepia",
@@ -335,7 +354,6 @@ export default class Grid extends Vue {
       max: 200,
       enabled: true,
     },
-    /*
     {
       label: "Invert",
       fn: "invert",
@@ -354,7 +372,6 @@ export default class Grid extends Vue {
       max: 100,
       enabled: true,
     },
-    */
     {
       label: "Brightness",
       fn: "brightness",
@@ -435,7 +452,7 @@ export default class Grid extends Vue {
   private squareWidth = 0;
   private squareHeight = 0;
   private menuColorGrid = false;
-  private isShowColorPicker = true;
+  private isShowColorPicker = false;
   private actualColor = this.canvasPixelColor(null); //init defaults
 
   private canvas: HTMLCanvasElement | null = null;
@@ -446,7 +463,7 @@ export default class Grid extends Vue {
   private draging = false;
   private x = 0;
   private y = 0;
-  private gridActive = true;
+  private gridActive = false;
   private gridMenu = false;
   private isFilterActive = true;
   private filterMenu = false;
@@ -465,7 +482,7 @@ export default class Grid extends Vue {
   public chooseFile(evt: any): void {
     evt.preventDefault();
     let file = evt.target.files[0];
-    if(!file) return;
+    if (!file) return;
     this.fileSelected(file);
   }
 
@@ -601,7 +618,7 @@ export default class Grid extends Vue {
         this.context.lineTo(w, y);
       }
       this.context.strokeStyle = this.gridColor;
-      this.context.lineWidth = 1;
+      this.context.lineWidth = this.lineWidth || 1;
       this.context.stroke();
     }
   }
@@ -656,6 +673,11 @@ export default class Grid extends Vue {
 
   public setPixelSquare(num: number): void {
     this.pixelSquare = Number(this.pixelSquare) + num;
+    this.redraw();
+  }
+
+  public setLineWidth(num: number): void {
+    this.lineWidth = Number(this.lineWidth) + num;
     this.redraw();
   }
 
